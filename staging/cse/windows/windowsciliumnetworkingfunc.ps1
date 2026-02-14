@@ -58,6 +58,22 @@ function Enable-WindowsCiliumNetworking
         Invoke-WindowsCiliumNetworkingInstallScript -Arguments $installArgs
 
         Write-Log "Windows Cilium Networking installation completed successfully$(if ($isRebootNeeded) { ' (restart required)' })."
+
+        # Temporary workaround for Windows 2025 BSOD (bugcheck 0x3b) during reboot.
+        # The TCP/IP stack crashes in tcpip!UdpGetPortPoolInCurrentCompartment due to a NULL
+        # network compartment pointer. These velocity feature keys enable a fix in the current
+        # kernel. This will be removed once the 4B VHD image ships with the permanent fix.
+        $windowsVersion = Get-WindowsVersion
+        if ($windowsVersion -eq $global:WindowsVersion2025) {
+            $keyPath = "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides"
+            if (-not (Test-Path $keyPath)) {
+                New-Item -Path $keyPath -Force | Out-Null
+            }
+            Set-ItemProperty -Path $keyPath -Name "2902347406" -Value 1 -Type DWORD -Force
+            Set-ItemProperty -Path $keyPath -Name "1253853326" -Value 1 -Type DWORD -Force
+            Write-Log "Set velocity feature keys (2902347406, 1253853326) for Windows 2025 BSOD workaround"
+        }
+
         if ($isRebootNeeded) {
             $global:RebootNeeded = $true
         }
