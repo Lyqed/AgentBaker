@@ -107,7 +107,7 @@ func buildIgnitionTarEntries(customData cloudInit) ([]ignitionTarEntry, error) {
 		switch {
 		case file.Content == "" || file.Encoding == "":
 			contents = []byte(file.Content)
-		case file.Encoding == "gzip":
+		case file.Encoding == "gzip": //nolint:goconst // constant is in test file, not accessible here
 			decoded, err := getGzipDecodedValue([]byte(file.Content))
 			if err != nil {
 				return nil, fmt.Errorf("failed to decode gzip content for %s: %w", file.Path, err)
